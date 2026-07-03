@@ -6,6 +6,12 @@ Built as a learning project to explore n8n automation, AI agent workflows, and n
 
 ---
 
+## 🔗 Link
+
+🌐 Website: https://career-coach-ai-pp.lovable.app/ 
+
+---
+
 ## What it does
 
 1. The user uploads their CV (PDF/DOCX) or provides a Google Drive link
