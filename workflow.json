@@ -1,0 +1,1360 @@
+{
+  "name": "CareerCoach AI - MVP",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        976
+      ],
+      "id": "f4e0842a-9c04-4e2a-bb07-6f646b153bc6",
+      "name": "Wait",
+      "webhookId": "ba1775f2-ebb0-4ac0-92cb-8ec5e11789ca"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4080,
+        416
+      ],
+      "id": "8190117a-f02b-45d0-9b80-6f2e2f71a872",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7ab18536-b4f6-459c-8b4e-cb98410ab508",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -960,
+        416
+      ],
+      "id": "46417a98-9628-41d1-8ed9-ae95a016f1b8",
+      "name": "Webhook",
+      "webhookId": "7ab18536-b4f6-459c-8b4e-cb98410ab508"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a recruitment assistant. Analyze the match between this CV and job posting.\n\nCV:\n{{ $('Extract from PDF').item.json.text }}\n\nJob Posting text (ignore any HTML, JavaScript or navigation menus, focus only on the actual job description):\n{{ $('Normalize Job Text').item.json.job_text }}\n\nReturn ONLY valid JSON, no explanation, no markdown, concise written:\n{\n  \"match_score\": \"integer (0-100)\",\n  \"strengths\": [\"string\"],\n  \"critical_gaps\": [\"string\"],\n  \"improvements\": [\"string\"],\n  \"recommendation\": \"enum: Apply | Consider | Skip\"\n}\n\nRules:\n- No explanations\n- No markdown\n- No extra text\n- If missing, use null"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2656,
+        416
+      ],
+      "id": "d95bb836-f4b1-4cb6-a88f-c2fd6107ccff",
+      "name": "Match % + analysis",
+      "credentials": {
+        "openAiApi": {
+          "id": "gYWcQvH4ED5jupci",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are an AI Career Potential Evaluator.\n\nYour task is not to compare a CV against a job posting again. A previous AI has already completed that analysis and identified the candidate's current match, strengths, weaknesses, and suggested improvements.\n\nYour responsibility is to estimate the candidate's realistic future potential for this specific role.\n\nBased on the provided analysis:\n\nEvaluate how much the candidate's match percentage could realistically improve if they complete all of the suggested improvements.\nConsider whether the suggested improvements are realistic and achievable within approximately 3-6 months.\nDo not assume that every improvement will result in a perfect match. Be realistic and conservative.\nIf some weaknesses cannot realistically be solved in the given timeframe (for example, years of professional experience), explain how they affect the final potential score.\n\nInput:\nCurrent Match Score: {{ $json.match_score }}\nStrenghts: {{ $json.strengths }}\nWeaknesses: {{ $json.critical_gaps }}\nImprovements: {{ $json.improvements }}\nRecommendation: {{ $json.recommendation }}\n\nOutput\n\nReturn your answer in ONLY valid JSON -no markdown, no backticks, no explanations, with the following info:\n\n{\n  \"potential_match\": \"integer (0-100)\",\n  \"reasoning\": [\"string\"]\n}\n\nReasoning:\nA concise explanation (2 briefly sentences) describing why this potential score is realistic.\n\nRules:\n- No explanations\n- No markdown\n- No extra text\n- If missing, use null"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        3264,
+        416
+      ],
+      "id": "e2523b5d-329b-4184-babe-a2b213b6e897",
+      "name": "Potential % + reasoning",
+      "credentials": {
+        "openAiApi": {
+          "id": "gYWcQvH4ED5jupci",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output[0].content[0].text;\n\nlet parsed;\n\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  throw new Error(\"AI #1 returned invalid JSON\");\n}\n\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3024,
+        416
+      ],
+      "id": "af5a6ee1-6be2-43c9-af40-030bff301933",
+      "name": "Validator + JSON parse"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output[0].content[0].text;\n\nlet parsed;\n\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  throw new Error(\"AI #1 returned invalid JSON\");\n}\n\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3616,
+        416
+      ],
+      "id": "da81137e-914c-4003-a3d7-3864a5194d03",
+      "name": "Validator + JSON parse 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const link = $input.item.json.body.cv_url;\n\nconst match = link.match(/\\/d\\/([a-zA-Z0-9_-]+)/);\nconst fileId = match ? match[1] : null;\nconst download_url = `https://drive.google.com/uc?export=download&id=${fileId}`;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    download_url\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        288
+      ],
+      "id": "fbeca24b-6f94-41c4-a702-ea56cb07293c",
+      "name": "Extract file ID from Drive"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $input.item.binary?.cv !== undefined }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "cab44f91-711b-45d9-8c68-54564d7f5ff5"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "eb7671bc-63eb-4071-accb-c6837e7c9fce",
+                    "leftValue": "={{ $json.body.cv_mode }}",
+                    "rightValue": "link",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        32
+      ],
+      "id": "37b3a3bf-845f-4748-a693-d4722c2e4889",
+      "name": "Switch CV format"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.download_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "cv"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        560,
+        288
+      ],
+      "id": "9380b4d3-90c4-40cb-a745-290a157ac3b9",
+      "name": "Download CV"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "cv",
+        "destinationKey": "cv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        -192
+      ],
+      "id": "7ae294bf-d6cc-40f1-89ec-2f33e9b6051c",
+      "name": "Extract from text"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=cv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "d3890d40-6d92-4a1b-927e-cc37e61d28d5",
+      "name": "Extract from PDF"
+    },
+    {
+      "parameters": {
+        "content": "Check how CV is uploaded and identify its format.",
+        "height": 240,
+        "width": 704,
+        "color": "#387594"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -32
+      ],
+      "id": "fedc7071-f4c8-4028-9e9e-75871e1deb71",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "58a11d86-d906-4c69-b6fc-a1810685c3cc",
+              "leftValue": "={{ $binary.cv.fileExtension }}",
+              "rightValue": "pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        32
+      ],
+      "id": "04c51ab2-95af-4a68-b361-c9ffd8420c6b",
+      "name": "PDF or Text file"
+    },
+    {
+      "parameters": {
+        "content": "## 🚀 CareerCoach AI Workflow\n\nThis workflow **helps candidates understand how well their profile aligns with a job description and provides personalized feedback for improvement.**\n\n📄 **Receive** the candidate's CV and the corresponding job description.\n\n📂 **Identify** the CV format, extract its text, and preprocess the content.\n\n🤖 **Analyze** the CV using AI to:\n\n* 🎯 Assess how the candidate's skills and experience align with the job requirements.\n* 💡 Identify the candidate's key strengths relevant to the role.\n* 📈 Highlight missing skills, qualifications, or experience that could improve their fit.\n* 🛠️ Provide actionable recommendations on how to strengthen their profile for similar positions.\n\n✅ **Validate** the AI-generated insights and structure them into JSON.\n\n📤 **Merge** all results and return a single structured response with personalized feedback and improvement suggestions.\n",
+        "height": 544,
+        "width": 656,
+        "color": "#3E667E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        -976
+      ],
+      "id": "f41ec647-4701-4128-8f30-0e46cd45ed21",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Triggered by a webhook when a CV and job info are submitted.",
+        "height": 256,
+        "width": 320,
+        "color": "#342A79"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        320
+      ],
+      "id": "af237fa5-e33e-466e-9638-02c4d338fec8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\nAccess the file from Google Drive and download it.\nIf access to the CV cannot be obtained, return an error response.",
+        "height": 224,
+        "width": 352,
+        "color": "#387594"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        256
+      ],
+      "id": "fb1dbbfc-e127-4e21-a9a0-8957194560a2",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Extract the text from the CV using the appropriate parser.",
+        "height": 432,
+        "width": 448,
+        "color": "#223758"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -272
+      ],
+      "id": "ab4d9746-6596-4b51-872f-a1e4c0c3e8fc",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Extract  job description from URL with POST method.",
+        "height": 240,
+        "width": 720,
+        "color": "#387594"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        896
+      ],
+      "id": "ddb457db-e90a-4e90-91fd-a4f8e737b0a9",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "Evaluate job match and validate and structure the AI output for further processing.",
+        "height": 240,
+        "width": 656,
+        "color": "#110859"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2560,
+        336
+      ],
+      "id": "0c9da86f-ce39-4880-a5e9-e923e49f5cff",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "Assess the candidate's future potential and validate and structure.",
+        "height": 240,
+        "width": 528,
+        "color": "#110859"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3248,
+        336
+      ],
+      "id": "189037ea-379f-42eb-8068-e3b2c371668c",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "Combine all results and send them back to the application.",
+        "height": 240,
+        "width": 464,
+        "color": "#342989"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3808,
+        336
+      ],
+      "id": "8ed7d909-2bdd-44ab-a624-760552a4e2e7",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b0a64b8-cf37-4459-ac4f-89de7cef08d0",
+              "name": "text",
+              "value": "={{ $('Webhook').item.json.body.job_text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        656,
+        1232
+      ],
+      "id": "4222fb01-2269-4e28-a224-ff1d977ad572",
+      "name": "Set job text field"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\nGet job description when it is plain text",
+        "height": 240,
+        "width": 720,
+        "color": "#387594"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        1200
+      ],
+      "id": "6967e339-975f-4c27-a4c8-ae9369eccba8",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9f84f7d0-75ef-4926-9f9b-33845d44aa5f",
+              "leftValue": "={{ $binary.cv !== undefined }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        288
+      ],
+      "id": "74158025-0564-43ff-9ee3-c1bf1e629864",
+      "name": "Check for error"
+    },
+    {
+      "parameters": {
+        "content": "Check uploaded CV for error",
+        "height": 224,
+        "width": 480,
+        "color": "#B15906"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        224
+      ],
+      "id": "1a76dc99-eb09-4312-a8fc-6edbdd147440",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": true,\n  \"message\": \"We couldn't read your CV file. Please make sure it's a valid PDF or DOCX file and try again.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1616,
+        320
+      ],
+      "id": "cd04125a-5c81-4006-8782-a3698e4dce60",
+      "name": "Return CV file error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": true,\n  \"message\": \"We couldn't access your CV. Please make sure your Google Drive link is set to 'Anyone with the link can view' and try again.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        928,
+        288
+      ],
+      "id": "1a17a136-8338-43ac-8c3a-8bed42a468f6",
+      "name": "Return URL error message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cf7e0518-d618-4e9b-9d01-6602fdcd4943",
+              "leftValue": "={{ $('Webhook').item.json.body.job_mode }}",
+              "rightValue": "link",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -336,
+        720
+      ],
+      "id": "7f0a1577-66cf-4bd3-9706-8b4ef1527e31",
+      "name": "Chekc Job desc format"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"startUrls\": [{\"url\": \"{{ $('Webhook').item.json.body.job_url }}\"}],\n  \"pageFunction\": \"async function pageFunction(context) { const $ = context.$; return { text: $('body').text() }; }\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        976
+      ],
+      "id": "12c3048c-88d4-4652-b2f0-3faaaf985eec",
+      "name": "Start Apify Scrape",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $('Start Apify Scrape').item.json.data.storageIds.datasets.default }}/items?token=REPLACE_WITH_ENV",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        864,
+        976
+      ],
+      "id": "5f00c841-0506-4a89-aa32-f2372ef4d65a",
+      "name": "Fetch Scraped Content",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "67db2923-a4ee-419c-a4ee-9d87c87b3371",
+              "leftValue": "={{ $json.text !== undefined && $json.text.length > 50  || $json.job_text !== undefined && $json.job_text.length > 50 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1328,
+        880
+      ],
+      "id": "23c383fd-d93c-4eda-a5aa-9c78d2f0623c",
+      "name": "Access job url"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": true,\n  \"message\": \"We couldn't read the job posting. Please make sure the URL is publicly accessible and try again.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1456,
+        1184
+      ],
+      "id": "91b7e6a0-376d-4d58-9d91-43a1340288d4",
+      "name": "Return job URL error"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\nReturn Job URL error ",
+        "height": 240,
+        "width": 368,
+        "color": "#B15906"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        1136
+      ],
+      "id": "c1eb89ce-a79b-47af-b69a-64a52f6d979d",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8ccca72c-a09a-4b6c-9f1e-b03738df1009",
+              "leftValue": "={{ $json.text !== undefined && $json.text.length > 50 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1424,
+        272
+      ],
+      "id": "9c9e56ae-8566-4eed-a65f-ba9e2c9d92f9",
+      "name": "If no error"
+    },
+    {
+      "parameters": {
+        "content": "Check Job description format - URL or text",
+        "height": 240,
+        "width": 262,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        640
+      ],
+      "id": "d1331631-9164-4c5d-b549-3dcbbe001f79",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "jsCode": "const matchData = $('Validator + JSON parse').item.json;\nconst potentialData = $('Validator + JSON parse 2').item.json;\n\nreturn {\n  json: {\n    match_score: matchData.match_score,\n    potential_score: potentialData.potential_match,\n    strengths: matchData.strengths,\n    critical_gaps: matchData.critical_gaps,\n    improvements: matchData.improvements,\n    recommendation: matchData.recommendation,\n    reasoning: Array.isArray(potentialData.reasoning) \n      ? potentialData.reasoning.join(' ') \n      : potentialData.reasoning\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3856,
+        416
+      ],
+      "id": "5a6ccd08-aa9d-4346-bc3e-42e6b2612a6d",
+      "name": "Combine result"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.item.json.text || $input.item.json.job_text;\nreturn { json: { job_text: text } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        880
+      ],
+      "id": "b8c156d4-094f-4ebb-9ea4-f0133ddd9a2e",
+      "name": "Normalize Job Text"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2208,
+        416
+      ],
+      "id": "2c49b4e7-db19-47c9-8645-0490b6c052f9",
+      "name": "Merge cv + job"
+    },
+    {
+      "parameters": {
+        "content": "Merge CV text and job descr\niption into one node",
+        "height": 240,
+        "width": 368,
+        "color": "#566ACD"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        336
+      ],
+      "id": "f1bbf8f2-71d9-4d98-92a5-01778654e9e5",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook').item.json.body.job_url }}",
+                    "rightValue": "linkedin.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "8ff7f907-2be4-4bf4-831e-e22afbc19ce8"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2c77a974-97fd-4181-8bc0-124241951b36",
+                    "leftValue": "={{ $('Webhook').item.json.body.job_url }}",
+                    "rightValue": "dev.bg",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        704
+      ],
+      "id": "4ab07d0f-6006-4368-a8bd-849c8cabe4d4",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $('Webhook').item.json.body.job_url;\nconst match = url.match(/\\/jobs\\/view\\/(\\d+)/);\nconst jobId = match ? match[1] : null;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    linkedin_job_id: jobId,\n    linkedin_api_url: `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        656
+      ],
+      "id": "0dea7b90-5eeb-46e8-bee0-e78e6af991a9",
+      "name": "Extract job ID"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.linkedin_api_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        656,
+        656
+      ],
+      "id": "5444d32d-faa5-4cbe-b2d5-9de5f94723b5",
+      "name": "Get LinkedIn data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.item.json.text;\nconst text = html.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n\nreturn {\n  json: {\n    job_text: text\n  }\n};v"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        656
+      ],
+      "id": "af0eba95-7f55-4292-ac74-5d58a30ffc7d",
+      "name": "Clean & Output"
+    },
+    {
+      "parameters": {
+        "content": "Get job description from LinkedIn with guest API",
+        "height": 224,
+        "width": 720,
+        "color": "#387594"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        592
+      ],
+      "id": "8046fa9e-6161-47e7-988d-10d107279734",
+      "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "content": "Check CV description format - URL or file\n",
+        "height": 240,
+        "width": 262,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -48
+      ],
+      "id": "c1d8d413-888b-467e-bf2b-bfbfd272475e",
+      "name": "Sticky Note16"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\nCheck for error while accessing CV from drive",
+        "height": 224,
+        "width": 320,
+        "color": "#B15906"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        736,
+        256
+      ],
+      "id": "b16d95cc-538e-4e54-b67f-1d272196401d",
+      "name": "Sticky Note17"
+    },
+    {
+      "parameters": {
+        "content": "Check text validity and normalize field name",
+        "height": 272,
+        "width": 368,
+        "color": "#3B54CE"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        784
+      ],
+      "id": "446c5691-5072-46a7-99cb-b10ae9f61c83",
+      "name": "Sticky Note18"
+    },
+    {
+      "parameters": {
+        "content": "Check URL ",
+        "height": 240,
+        "width": 256,
+        "color": "#1C398E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        640
+      ],
+      "id": "13ac336c-843f-4ce3-a7b8-cda3abe2384c",
+      "name": "Sticky Note19"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Fetch Scraped Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch CV format",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Chekc Job desc format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match % + analysis": {
+      "main": [
+        [
+          {
+            "node": "Validator + JSON parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Potential % + reasoning": {
+      "main": [
+        [
+          {
+            "node": "Validator + JSON parse 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validator + JSON parse": {
+      "main": [
+        [
+          {
+            "node": "Potential % + reasoning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Validator + JSON parse 2": {
+      "main": [
+        [
+          {
+            "node": "Combine result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch CV format": {
+      "main": [
+        [
+          {
+            "node": "PDF or Text file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract file ID from Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract file ID from Drive": {
+      "main": [
+        [
+          {
+            "node": "Download CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download CV": {
+      "main": [
+        [
+          {
+            "node": "Check for error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from PDF": {
+      "main": [
+        [
+          {
+            "node": "If no error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from text": {
+      "main": [
+        [
+          {
+            "node": "If no error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF or Text file": {
+      "main": [
+        [
+          {
+            "node": "Extract from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set job text field": {
+      "main": [
+        [
+          {
+            "node": "Access job url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for error": {
+      "main": [
+        [
+          {
+            "node": "PDF or Text file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return URL error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chekc Job desc format": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set job text field",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Apify Scrape": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Scraped Content": {
+      "main": [
+        [
+          {
+            "node": "Access job url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Access job url": {
+      "main": [
+        [
+          {
+            "node": "Normalize Job Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return job URL error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If no error": {
+      "main": [
+        [
+          {
+            "node": "Merge cv + job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return CV file error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine result": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Job Text": {
+      "main": [
+        [
+          {
+            "node": "Merge cv + job",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge cv + job": {
+      "main": [
+        [
+          {
+            "node": "Match % + analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract job ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start Apify Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract job ID": {
+      "main": [
+        [
+          {
+            "node": "Get LinkedIn data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get LinkedIn data": {
+      "main": [
+        [
+          {
+            "node": "Clean & Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean & Output": {
+      "main": [
+        [
+          {
+            "node": "Access job url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "60b5489a-f545-49fa-95d1-c00eab46babf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "846af96e1958c1b851084b0ee9c34b0d52352efc7816915e583dbe43ab052878"
+  },
+  "nodeGroups": [],
+  "id": "gJaFuLszyAqIpkEm",
+  "tags": []
+}
