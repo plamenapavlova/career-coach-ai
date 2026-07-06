@@ -1,6 +1,6 @@
 # CareerCoach AI
 
-An AI-powered career assistant that analyzes how well your CV matches a job posting — and tells you exactly how to improve it.
+An AI-powered career assistant that analyzes how well your CV matches a job posting - and tells you exactly how to improve it.
 
 Built as a learning project to explore n8n automation, AI agent workflows, and no-code frontend development with Lovable.
 
@@ -54,7 +54,7 @@ Built as a learning project to explore n8n automation, AI agent workflows, and n
 - Error handling for inaccessible files or unsupported URLs
 
 ### Backend (n8n Workflow)
-The workflow runs in parallel — CV processing and job scraping happen simultaneously:
+The workflow runs in parallel - CV processing and job scraping happen simultaneously:
 
 ---
 
@@ -77,8 +77,8 @@ careercoach-ai/
 
 ## Repos
 
-- **Frontend:** [Lovable repo link] ← replace with your Lovable GitHub repo URL
-- **Backend workflow:** `/backend/workflow.json` — import into n8n to replicate
+- **Frontend:** [https://github.com/plamenapavlova/career-coach-ai-pp]
+- **Backend workflow:** `/backend/workflow.json` - import into n8n to replicate
 
 ---
 
