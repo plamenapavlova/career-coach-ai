@@ -68,8 +68,8 @@ careercoach-ai/
   │   ├── screenshots/    # Visual overview of the n8n workflow
   │   └── README.md       # Backend setup instructions
   ├── docs/
-  │   ├── diagram-1.png   # System architecture diagram
-  │   └── diagram-2.png   # User flow diagram
+  │   ├── process_flow.md          # System architecture diagram
+  │   └── system_architecture.md   # User flow diagram
   └── README.md
 ```
 
